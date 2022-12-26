@@ -1,0 +1,32 @@
+package top.vita.chat.server.handler;
+
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import top.vita.chat.message.LoginRequestMessage;
+import top.vita.chat.message.LoginResponseMessage;
+import top.vita.chat.server.service.UserServiceFactory;
+import top.vita.chat.server.session.SessionFactory;
+
+/**
+ * @Author vita
+ * @Date 2022/12/26 12:11
+ */
+@ChannelHandler.Sharable
+public class LoginRequestMessageHandler extends SimpleChannelInboundHandler<LoginRequestMessage> {
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, LoginRequestMessage msg) throws Exception {
+        String username = msg.getUsername();
+        String password = msg.getPassword();
+        boolean flag = UserServiceFactory.getUserService().login(username, password);
+        LoginResponseMessage message;
+        if (flag) {
+            SessionFactory.getSession().bind(ctx.channel(), username);
+            message = new LoginResponseMessage(true, "登录成功");
+        } else {
+            message = new LoginResponseMessage(false, "用户名或密码不正确");
+        }
+        ctx.writeAndFlush(message);
+        super.channelActive(ctx);
+    }
+}
